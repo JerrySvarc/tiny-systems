@@ -52,23 +52,68 @@ let rec evaluate (ctx:VariableContext) e =
       | Some res -> res
       | _ -> failwith ("unbound variable: " + v)
 
-  // NOTE: You have the following from before
-  | Unary(op, e) -> failwith "implemented in step 2"
-  | If(econd, etrue, efalse) -> failwith "implemented in step 2"
-  | Lambda(v, e) -> failwith "implemented in step 3"
-  | Application(e1, e2) -> failwith "implemented in step 3"
-  | Let(v, e1, e2) -> failwith "implemented in step 4"
-  | Tuple(e1, e2) -> failwith "implemented in step 5"
-  | TupleGet(b, e) -> failwith "implemented in step 5"
+  | Unary(op, e) ->
+      let res =  evaluate ctx e  
+      match res with
+      | ValNum valn ->
+        match op with
+        | "-" -> ValNum(-valn)
+        | _ -> failwith("unsupported operation")
+      | ValClosure(_, _, _) -> failwith "wrong operand"
+      | ValTuple(_, _) -> failwith "Not Implemented"
+
+  | If (c,r1,r2) ->
+    let res = evaluate ctx c 
+    match res with 
+    | ValNum valn ->
+      match valn with
+      | 1 -> evaluate ctx r1
+      | _ -> evaluate ctx r2
+    | ValClosure(_, _, _) -> failwith "wrong operand"
+    | ValTuple(_, _) -> failwith "Not Implemented"
+  
+  | Lambda(v, e) ->
+      ValClosure(v,e,ctx)
+
+  | Application(e1, e2) ->
+      let res1 = evaluate ctx e1
+      let res2 = evaluate ctx e2
+      match res1 with
+      | ValClosure(name,exp,ctx) ->
+        let ctx = ctx.Add(name,res2)
+        evaluate ctx exp 
+      | ValNum(_) -> failwith "Not Implemented"
+      | ValTuple(_, _) -> failwith "Not Implemented"
+
+  | Let(v, e1, e2) ->
+    let lambda = Lambda (v, e2)
+    evaluate ctx (Application (lambda ,e1))
+
+  | Tuple(e1, e2) ->
+    let res1 = evaluate ctx e1
+    let res2 = evaluate ctx e2
+    ValTuple(res1,res2)
+  | TupleGet(b, e) ->
+      match e with 
+      | Tuple(e1,e2) ->
+        match b with
+        | true -> evaluate ctx e1
+        | false -> evaluate ctx e2
+      | _ -> failwith("Not a tuple")
 
   | Match(e, v, e1, e2) ->
       // TODO: Implement pattern matching. Note you need to
       // assign the right value to the variable of name 'v'!
-      failwith "not implemented"
+       match e with
+       | Case(b,exp) ->
+        let new_ctx = ctx.Add(v,(evaluate ctx exp))
+        match b with 
+        | true -> evaluate new_ctx e1
+        | false -> evaluate new_ctx e2
 
   | Case(b, e) ->
       // TODO: Create a union value.
-      failwith "not implemented"
+      ValCase(b, evaluate ctx e)
 
 // ----------------------------------------------------------------------------
 // Test cases
