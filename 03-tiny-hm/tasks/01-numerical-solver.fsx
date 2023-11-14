@@ -14,23 +14,22 @@ type Number =
 
 
 let rec occursCheck (v:string) (n:Number) = 
-  // TODO: Check if variable 'v' appears anywhere inside 'n'
-  false
+  match n with
+  | Succ succ ->
+    occursCheck v succ
+  | Variable var -> v = var
+  | _ -> false
 
 let rec substite (v:string) (subst:Number) (n:Number) =
-  // TODO: Replace all occurrences of variable 'v' in the
-  // number 'n' with the replacement number 'subst'
-  n
-
+  match n with
+  | Succ succ -> Succ( substite v subst succ)
+  | Variable var -> if var =v then subst else n
+  | _ -> n
 let substituteConstraints (v:string) (subst:Number) (constraints:list<Number * Number>) = 
-  // TODO: Substitute 'v' for 'subst' (use 'substitute') in 
-  // all numbers in all the constraints in 'constraints'
-  constraints
+  constraints |> List.map (fun (n1,n2) -> (substite v subst n1, substite v subst n2))
 
 let substituteAll (subst:list<string * Number>) (n:Number) =
-  // TODO: Perform all substitutions 
-  // specified  in 'subst' on the number 'n'
-  n
+  (n,subst) ||> List.fold (fun n (var, num) -> substite var num n)
 
 let rec solve constraints = 
   match constraints with 
@@ -38,9 +37,11 @@ let rec solve constraints =
   | (Succ n1, Succ n2)::constraints ->
       solve ((n1, n2)::constraints)
   | (Zero, Zero)::constraints -> solve constraints
-  | (Succ _, Zero)::_ | (Zero, Succ _)::_ -> 
+  | (Succ _, Zero)::_ 
+  | (Zero, Succ _)::_ -> 
       failwith "Cannot be solved"
-  | (n, Variable v)::constraints | (Variable v, n)::constraints ->
+  | (n, Variable v)::constraints 
+  | (Variable v, n)::constraints ->
       if occursCheck v n then failwith "Cannot be solved (occurs check)"
       let constraints = substituteConstraints v n constraints
       let subst = solve constraints
@@ -48,17 +49,15 @@ let rec solve constraints =
       (v, n)::subst
 
 // Should work: x = Zero
-solve 
-  [ Succ(Variable "x"), Succ(Zero) ]
+solve [ Succ(Variable "x"), Succ(Zero) ]
 
 // Should faild: S(Z) <> Z
-solve 
-  [ Succ(Succ(Zero)), Succ(Zero) ]
+solve [ Succ(Succ(Zero)), Succ(Zero) ]
 
 // Not done: Need to substitute x/Z in S(x)
 solve 
-  [ Succ(Variable "x"), Succ(Zero)
-    Variable "y", Succ(Variable "x") ]
+[ Succ(Variable "x"), Succ(Zero) 
+  Variable "y", Succ(Variable "x") ]
 
 // Not done: Need to substitute z/Z in S(S(z))
 solve 
