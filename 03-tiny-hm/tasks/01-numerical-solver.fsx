@@ -26,10 +26,14 @@ let rec substite (v:string) (subst:Number) (n:Number) =
   | Variable var -> if var =v then subst else n
   | _ -> n
 let substituteConstraints (v:string) (subst:Number) (constraints:list<Number * Number>) = 
-  constraints |> List.map (fun (n1,n2) -> (substite v subst n1, substite v subst n2))
+  // TODO: Substitute 'v' for 'subst' (use 'substitute') in 
+  // all numbers in all the constraints in 'constraints'
+  constraints
 
 let substituteAll (subst:list<string * Number>) (n:Number) =
-  (n,subst) ||> List.fold (fun n (var, num) -> substite var num n)
+  // TODO: Perform all substitutions 
+  // specified  in 'subst' on the number 'n'
+  n
 
 let rec solve constraints = 
   match constraints with 
@@ -52,7 +56,12 @@ let rec solve constraints =
 solve [ Succ(Variable "x"), Succ(Zero) ]
 
 // Should faild: S(Z) <> Z
-solve [ Succ(Succ(Zero)), Succ(Zero) ]
+solve 
+  [ Succ(Succ(Zero)), Succ(Zero) ]
+
+// Should fail: No 'x' such that S(S(x)) = S(Z)
+solve 
+  [ Succ(Succ(Variable "x")), Succ(Zero) ]
 
 // Not done: Need to substitute x/Z in S(x)
 solve 
